@@ -1,0 +1,9 @@
+# Do not commit raw or processed employee data; link to the public source instead
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+.DS_Store

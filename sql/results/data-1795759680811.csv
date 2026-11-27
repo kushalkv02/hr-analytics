@@ -1,0 +1,7 @@
+"business_travel","overtime","employee_count","leavers","attrition_rate_pct","flag"
+"Non-Travel","No","115","5","4.35",""
+"Non-Travel","Yes","35","7","20.00",""
+"Travel_Frequently","No","191","33","17.28",""
+"Travel_Frequently","Yes","86","36","41.86",""
+"Travel_Rarely","No","748","72","9.63",""
+"Travel_Rarely","Yes","295","84","28.47",""

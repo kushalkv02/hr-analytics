@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HR Attrition Dashboard</title>
+<style>
+:root{
+  --bg:#f5f6f8;--panel:#fff;--ink:#1c2430;--mute:#5d6877;--line:#dde1e8;
+  --stay:#4c78a8;--leave:#e45756;--grey:#9aa0a6;--track:#eceff3;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12161c;--panel:#1b212a;--ink:#e8ecf2;--mute:#9aa6b6;--line:#2b3340;--track:#262e3a;--stay:#6b9bcf;--leave:#ef6f6d}}
+:root[data-theme="dark"]{--bg:#12161c;--panel:#1b212a;--ink:#e8ecf2;--mute:#9aa6b6;--line:#2b3340;--track:#262e3a;--stay:#6b9bcf;--leave:#ef6f6d}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI","Helvetica Neue",Arial,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 20px 48px}
+h1{font:600 26px/1.2 Georgia,"Times New Roman",serif;margin:0 0 6px}
+.sub{color:var(--mute);margin:0 0 22px;max-width:70ch}
+.filter{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:18px}
+.filter b{font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:none;color:var(--ink);padding:9px 16px;font:inherit;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+button:focus-visible{outline:3px solid var(--stay);outline-offset:2px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.kpi .v{font:600 30px/1.1 Georgia,serif}
+.kpi .l{color:var(--mute);font-size:13px;margin-top:4px}
+.kpi.hot .v{color:var(--leave)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.tabs button{border:1px solid var(--line);background:none;color:var(--ink);border-radius:999px;padding:6px 14px;font:inherit;cursor:pointer}
+.tabs button[aria-pressed="true"]{border-color:var(--stay);background:var(--stay);color:#fff}
+.ctl{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center;margin-bottom:12px;color:var(--mute);font-size:13px}
+.ctl .seg button{padding:5px 12px;font-size:13px}
+.note{background:var(--track);border-radius:6px;padding:8px 12px;font-size:13px;margin-bottom:12px;display:none}
+.row{display:grid;grid-template-columns:minmax(120px,210px) 1fr 64px;gap:12px;align-items:center;padding:6px 0}
+.row .nm{font-size:14px}.row .nm small{color:var(--mute);display:block;font-size:12px}
+.track{position:relative;height:20px;background:var(--track);border-radius:4px}
+.fill{height:100%;border-radius:4px;background:var(--leave);transition:width .35s}
+.row.small .fill{background:var(--grey)}
+.ref{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed var(--stay)}
+.val{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.legend{font-size:12px;color:var(--mute);margin-top:8px}
+.legend i{display:inline-block;width:14px;border-top:2px dashed var(--stay);vertical-align:middle;margin-right:6px}
+.tw{overflow-x:auto;margin-top:18px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--mute)}
+.pos{color:var(--leave)}.neg{color:var(--stay)}
+.call{margin-top:18px;border-left:4px solid var(--leave);padding:4px 0 4px 14px}
+.foot{color:var(--mute);font-size:13px;margin-top:22px;max-width:80ch}
+@media (max-width:720px){.kpis{grid-template-columns:repeat(2,1fr)}.row{grid-template-columns:100px 1fr 56px}}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Where does employee attrition concentrate?</h1>
+  <p class="sub">1,470 employees in the IBM HR Analytics public sample, 237 marked as attrited. Switch the overtime view and every chart, figure and table below updates.</p>
+
+  <div class="filter" role="group" aria-label="Overtime filter">
+    <b>Overtime</b>
+    <div class="seg" id="otSeg">
+      <button data-ot="all" aria-pressed="true">All employees</button>
+      <button data-ot="yes" aria-pressed="false">Works overtime</button>
+      <button data-ot="no" aria-pressed="false">No overtime</button>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="panel">
+    <div class="tabs" id="tabs" role="group" aria-label="Compare by"></div>
+    <div class="ctl">
+      <div>Sort <span class="seg" id="sortSeg"></span></div>
+      <div>Show <span class="seg" id="metSeg">
+        <button data-m="rate" aria-pressed="true">Attrition rate</button>
+        <button data-m="leavers" aria-pressed="false">Leavers</button></span></div>
+    </div>
+    <div class="note" id="note"></div>
+    <div id="bars"></div>
+    <div class="legend" id="legend"></div>
+    <div class="tw"><table id="tbl"></table></div>
+  </div>
+
+  <div class="call">
+    <b>Overtime is the largest gap in this sample.</b> Attrition is 30.53% with overtime and 10.44% without (about 2.9 times), and the gap shows up within every tenure band, age band, travel level and department. Choose “Works overtime” and compare tenure to see it.
+  </div>
+
+  <p class="foot">Attrition rate = leavers ÷ employees in the segment. This is a snapshot of a public sample, not annualized turnover. Associations shown here do not explain why anyone left, one-variable splits are not statistically adjusted, and groups under 30 employees are greyed because their rates are unstable. Figures are aggregate SQL results only; the dashboard holds no employee-level data.</p>
+</div>
+
+<script>
+// Aggregate SQL results: [employees, leavers] for all / overtime yes / overtime no
+const D={
+ dept:{name:"Department",ot:true,rows:[
+  ["Sales",[446,92],[128,48],[318,44]],["Research & Development",[961,133],[271,74],[690,59]],["Human Resources",[63,12],[17,5],[46,7]]]},
+ role:{name:"Job role",ot:true,rows:[
+  ["Sales Representative",[83,33],[24,16],[59,17]],["Laboratory Technician",[259,62],[62,31],[197,31]],
+  ["Human Resources",[52,12],[13,5],[39,7]],["Sales Executive",[326,57],[94,31],[232,26]],
+  ["Research Scientist",[292,47],[97,33],[195,14]],["Manufacturing Director",[145,10],[39,4],[106,6]],
+  ["Healthcare Representative",[131,9],[37,2],[94,7]],["Manager",[102,5],[27,4],[75,1]],["Research Director",[80,2],[23,1],[57,1]]]},
+ travel:{name:"Business travel",ot:true,rows:[
+  ["Non-Travel",[150,12],[35,7],[115,5]],["Travel rarely",[1043,156],[295,84],[748,72]],["Travel frequently",[277,69],[86,36],[191,33]]]},
+ age:{name:"Age band",ot:true,rows:[
+  ["Under 25",[97,38],[31,21],[66,17]],["25–34",[554,112],[141,57],[413,55]],["35–44",[505,51],[151,31],[354,20]],
+  ["45–54",[245,25],[66,12],[179,13]],["55+",[69,11],[27,6],[42,5]]]},
+ tenure:{name:"Tenure",ot:true,rows:[
+  ["0–1 years",[215,75],[69,38],[146,37]],["2–4 years",[365,66],[105,37],[260,29]],
+  ["5–9 years",[524,58],[145,35],[379,23]],["10+ years",[366,38],[97,17],[269,21]]]},
+ sat:{name:"Job satisfaction",ot:false,rows:[
+  ["1 (low)",[289,66]],["2",[280,46]],["3",[442,73]],["4 (very high)",[459,52]]]},
+ wlb:{name:"Work-life balance",ot:false,rows:[
+  ["1 (bad)",[80,25]],["2",[344,58]],["3",[893,127]],["4 (best)",[153,27]]]}
+};
+const TOT={all:[1470,237],yes:[416,127],no:[1054,110]};
+const S={ot:"all",dim:"dept",sort:"rate",met:"rate"};
+const $=id=>document.getElementById(id);
+const pct=(l,n)=>n?100*l/n:0, f1=x=>x.toFixed(1)+"%", f2=x=>x.toFixed(2)+"%";
+const idx={all:1,yes:2,no:3};
+
+function btns(el,items,key){el.innerHTML="";items.forEach(([v,t])=>{const b=document.createElement("button");
+  b.textContent=t;b.dataset.v=v;b.setAttribute("aria-pressed",S[key]===v);
+  b.onclick=()=>{S[key]=v;render()};el.appendChild(b)})}
+
+function render(){
+  document.querySelectorAll("#otSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.ot===S.ot));
+  document.querySelectorAll("#metSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===S.met));
+  const [n,l]=TOT[S.ot], rate=pct(l,n);
+  $("kpis").innerHTML=
+    `<div class="kpi"><div class="v">${n.toLocaleString()}</div><div class="l">Employees</div></div>
+     <div class="kpi"><div class="v">${l}</div><div class="l">Leavers (attrition = Yes)</div></div>
+     <div class="kpi hot"><div class="v">${f2(rate)}</div><div class="l">Attrition rate</div></div>
+     <div class="kpi"><div class="v">${f2(100-rate)}</div><div class="l">Retention rate</div></div>`;
+  const tabs=$("tabs");tabs.innerHTML="";
+  Object.entries(D).forEach(([k,d])=>{const b=document.createElement("button");b.textContent=d.name;
+    b.setAttribute("aria-pressed",S.dim===k);b.onclick=()=>{S.dim=k;render()};tabs.appendChild(b)});
+  btns($("sortSeg"),[["rate","By rate"],["size","By headcount"],["nat","Original order"]],"sort");
+
+  const d=D[S.dim], usable=d.ot, key=(usable&&S.ot!=="all")?S.ot:"all", note=$("note");
+  if(!usable&&S.ot!=="all"){note.style.display="block";
+    note.textContent="Overtime split isn’t available for "+d.name.toLowerCase()+"; showing all employees.";}
+  else note.style.display="none";
+  const baseTot=(key==="all")?TOT.all:TOT[S.ot], base=pct(baseTot[1],baseTot[0]);
+  let rows=d.rows.map(r=>{const [en,el]=r[idx[key]];return{n:r[0],e:en,l:el,r:pct(el,en),sh:pct(el,baseTot[1])}});
+  if(S.sort==="rate")rows.sort((a,b)=>b.r-a.r);
+  if(S.sort==="size")rows.sort((a,b)=>b.e-a.e);
+  const byRate=S.met==="rate", max=Math.max(...rows.map(x=>byRate?x.r:x.l),byRate?base:0)*1.08||1;
+  $("bars").innerHTML=rows.map(x=>{const v=byRate?x.r:x.l,w=100*v/max;
+    return `<div class="row${x.e<30?" small":""}"><div class="nm">${x.n}<small>${x.e} employees${x.e<30?" · small group":""}</small></div>
+      <div class="track"><div class="fill" style="width:${w}%"></div>${byRate?`<div class="ref" style="left:${100*base/max}%"></div>`:""}</div>
+      <div class="val">${byRate?f1(x.r):x.l}</div></div>`}).join("");
+  $("legend").innerHTML=byRate?`<i></i>Dashed line: overall rate for this view (${f2(base)}). Grey bars: fewer than 30 employees.`:"Number of leavers in each segment. Grey bars: fewer than 30 employees.";
+  $("tbl").innerHTML=`<tr><th>${d.name}</th><th>Employees</th><th>Leavers</th><th>Attrition rate</th><th>vs overall (pp)</th><th>Share of leavers</th></tr>`+
+    rows.map(x=>{const g=x.r-base;return `<tr><td>${x.n}${x.e<30?" (small group)":""}</td><td>${x.e.toLocaleString()}</td><td>${x.l}</td><td>${f2(x.r)}</td>
+      <td class="${g>0?"pos":"neg"}">${g>0?"+":""}${g.toFixed(1)}</td><td>${f1(x.sh)}</td></tr>`}).join("");
+}
+document.querySelectorAll("#otSeg button").forEach(b=>b.onclick=()=>{S.ot=b.dataset.ot;render()});
+document.querySelectorAll("#metSeg button").forEach(b=>b.onclick=()=>{S.met=b.dataset.m;render()});
+render();
+</script>
+</body>
+</html>
