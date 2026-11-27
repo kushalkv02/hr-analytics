@@ -1,3 +1,5 @@
+#View dashboard here - https://magnificent-belekoy-212254.netlify.app
+
 # HR Analytics | Employee Attrition & Workforce Analysis
 
 Descriptive decision-support project: where is attrition concentrated, and which segments should HR investigate first?
